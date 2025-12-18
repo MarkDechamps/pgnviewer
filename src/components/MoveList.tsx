@@ -13,10 +13,21 @@ export function MoveList({ moves, currentMoveIndex, onMoveClick }: MoveListProps
 
   useEffect(() => {
     if (activeRef.current) {
-      activeRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
+      // Use scrollIntoView only within the parent scroll container, not the page
+      const scrollContainer = activeRef.current.closest('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        const elementTop = activeRef.current.offsetTop;
+        const containerHeight = scrollContainer.clientHeight;
+        const scrollTop = scrollContainer.scrollTop;
+        
+        // Only scroll if element is outside visible area
+        if (elementTop < scrollTop || elementTop > scrollTop + containerHeight - 40) {
+          scrollContainer.scrollTo({
+            top: Math.max(0, elementTop - containerHeight / 2),
+            behavior: 'smooth',
+          });
+        }
+      }
     }
   }, [currentMoveIndex]);
 
