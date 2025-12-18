@@ -14,7 +14,7 @@ import {
   saveViewerState,
   ViewerState,
 } from '@/lib/chess-storage';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -23,6 +23,9 @@ export default function Index() {
   const [games, setGames] = useState<ParsedGame[]>([]);
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
+  const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white');
+
+  const flipBoard = () => setBoardOrientation(prev => prev === 'white' ? 'black' : 'white');
 
   const currentGame = games[selectedGameIndex];
   const currentMoves = currentGame?.moves || [];
@@ -162,9 +165,9 @@ export default function Index() {
             <div className="space-y-4">
               <Card className="p-4 bg-card">
                 <div className="flex justify-center">
-                  <ChessBoard fen={currentFen} boardWidth={Math.min(450, window.innerWidth - 80)} />
+                  <ChessBoard fen={currentFen} boardWidth={Math.min(450, window.innerWidth - 80)} orientation={boardOrientation} />
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 flex items-center gap-2">
                   <NavigationButtons
                     onFirst={goToFirst}
                     onPrevious={goToPrevious}
@@ -173,6 +176,9 @@ export default function Index() {
                     canGoPrevious={currentMoveIndex >= 0}
                     canGoNext={currentMoveIndex < currentMoves.length - 1}
                   />
+                  <Button variant="outline" size="icon" onClick={flipBoard} title="Flip board">
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
                 </div>
                 
                 {/* Current move display */}
