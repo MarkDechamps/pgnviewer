@@ -19,8 +19,8 @@ export function ChessBoard({ fen, className = '', boardWidth = 400, isPresenter 
           position: fen,
           allowDragging: false,
           boardOrientation: orientation,
-          lightSquareStyle: { backgroundColor: '#E8D9C0' },
-          darkSquareStyle: { backgroundColor: '#8B7355' },
+          lightSquareStyle: { backgroundColor: 'hsl(39 46% 84%)' },
+          darkSquareStyle: { backgroundColor: 'hsl(30 25% 44%)' },
         }}
       />
     </div>
