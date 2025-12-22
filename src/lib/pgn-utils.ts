@@ -11,6 +11,8 @@ export interface MoveNode {
   fen: string;
   moveNumber: number;
   isWhite: boolean;
+  from: string;
+  to: string;
   comment?: string;
   variations?: MoveNode[][];
   nag?: string[];
@@ -177,6 +179,8 @@ function extractMoves(chess: Chess, initialFen: string): MoveNode[] {
       fen: tempChess.fen(),
       moveNumber,
       isWhite,
+      from: move.from,
+      to: move.to,
     });
   }
   

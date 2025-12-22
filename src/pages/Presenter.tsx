@@ -53,6 +53,7 @@ export default function Presenter() {
           fen={currentFen} 
           boardWidth={boardSize} 
           isPresenter={true}
+          lastMoveSquares={state?.lastMoveSquares || null}
         />
       </div>
 
