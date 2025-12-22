@@ -9,6 +9,7 @@ export interface ViewerState {
   moveIndex: number;
   fen: string;
   lastMove: string | null;
+  lastMoveSquares: { from: string; to: string } | null;
   moveNumber: number;
   isWhiteMove: boolean;
 }

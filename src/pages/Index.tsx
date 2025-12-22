@@ -41,6 +41,7 @@ export default function Index() {
       moveIndex: currentMoveIndex,
       fen: currentFen,
       lastMove: move ? move.san : null,
+      lastMoveSquares: move ? { from: move.from, to: move.to } : null,
       moveNumber: move ? move.moveNumber : 0,
       isWhiteMove: move ? move.isWhite : true,
     };
@@ -165,7 +166,12 @@ export default function Index() {
             <div className="space-y-4">
               <Card className="p-4 bg-card">
                 <div className="flex justify-center">
-                  <ChessBoard fen={currentFen} boardWidth={Math.min(450, window.innerWidth - 80)} orientation={boardOrientation} />
+                  <ChessBoard 
+                    fen={currentFen} 
+                    boardWidth={Math.min(450, window.innerWidth - 80)} 
+                    orientation={boardOrientation}
+                    lastMoveSquares={currentMoveIndex >= 0 && currentMoves[currentMoveIndex] ? { from: currentMoves[currentMoveIndex].from, to: currentMoves[currentMoveIndex].to } : null}
+                  />
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <NavigationButtons
