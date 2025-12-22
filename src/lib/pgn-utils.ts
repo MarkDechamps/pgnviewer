@@ -18,73 +18,145 @@ export interface MoveNode {
 
 export function parseMultiplePgn(pgnText: string): ParsedGame[] {
   const games: ParsedGame[] = [];
-  
-  // Split by double newline followed by [Event or by game termination markers
-  const gameTexts = pgnText.split(/\n\n(?=\[Event|\[)/);
-  
+  const normalized = pgnText.replace(/\r\n/g, '\n').trim();
+
+  if (!normalized) return games;
+
+  // Treat each [Event "..."] header as the start of a new game.
+  // This avoids breaking files that contain blank lines between every header tag.
+  const eventStartRegex = /(^|\n)\s*\[Event\s+"/g;
+  const starts: number[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = eventStartRegex.exec(normalized)) !== null) {
+    starts.push(match.index + (match[1] ? match[1].length : 0));
+  }
+
+  const gameTexts = starts.length
+    ? starts.map((start, i) => normalized.slice(start, starts[i + 1] ?? normalized.length).trim())
+    : [normalized];
+
   for (const gameText of gameTexts) {
-    if (!gameText.trim()) continue;
-    
+    if (!gameText) continue;
+
     try {
-      const game = parseSingleGame(gameText.trim());
-      if (game) {
-        games.push(game);
-      }
+      const game = parseSingleGame(gameText);
+      if (game) games.push(game);
     } catch (e) {
       console.warn('Failed to parse game:', e);
     }
   }
-  
+
   return games;
+}
+
+function stripParenthesizedVariations(text: string): string {
+  let out = '';
+  let depth = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '(') {
+      depth++;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth === 0) out += ch;
+  }
+
+  return out;
+}
+
+function sanitizeMoveText(moveText: string): string {
+  let text = moveText;
+
+  // Remove PGN comments and common lesson annotations
+  text = text.replace(/\{[^}]*\}/gs, ' ');
+  text = text.replace(/;[^\n]*/g, ' ');
+
+  // Remove variations: ( ... ) — keep mainline only
+  text = stripParenthesizedVariations(text);
+
+  // Remove numeric annotation glyphs: $15, $1, etc.
+  text = text.replace(/\$\d+/g, ' ');
+
+  // Remove move annotation suffixes: !, ?, !?, ??, etc.
+  text = text.replace(/[!?]+/g, '');
+
+  // Normalize whitespace
+  return text.replace(/\s+/g, ' ').trim();
 }
 
 function parseSingleGame(pgnText: string): ParsedGame | null {
   const chess = new Chess();
-  
+
   // Extract headers
   const headers: Record<string, string> = {};
   const headerRegex = /\[(\w+)\s+"([^"]*)"\]/g;
-  let match;
-  
-  while ((match = headerRegex.exec(pgnText)) !== null) {
-    headers[match[1]] = match[2];
+  let headerMatch;
+
+  while ((headerMatch = headerRegex.exec(pgnText)) !== null) {
+    headers[headerMatch[1]] = headerMatch[2];
   }
-  
+
   // Check if this is a FEN position
   const initialFen = headers['FEN'] || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-  
+
   // Remove headers from pgn text
-  const moveText = pgnText.replace(/\[.*?\]\s*/g, '').trim();
-  
-  if (!moveText) {
-    // Just a FEN position, no moves
+  const rawMoveText = pgnText.replace(/\[.*?\]\s*/g, '').trim();
+  const cleanedMoveText = sanitizeMoveText(rawMoveText);
+
+  // If there are no actual moves (e.g. only headers, or only comments), treat it as a position.
+  if (!cleanedMoveText) {
     return {
       headers,
       moves: [],
       initialFen,
     };
   }
-  
-  // Try to load the PGN
+
+  // Preserve the header section if we need to rebuild a sanitized PGN for chess.js
+  const headerSectionMatch = pgnText.match(/^(?:\s*\[[^\]]+\]\s*)+/);
+  const headerSection = headerSectionMatch ? headerSectionMatch[0].trim() : '';
+
+  // Try to load the PGN as-is; if it fails (common with lesson-style comments/variations),
+  // retry with a sanitized mainline-only version.
   try {
-    if (headers['FEN']) {
-      chess.load(headers['FEN']);
-    }
+    if (headers['FEN']) chess.load(headers['FEN']);
     chess.loadPgn(pgnText, { strict: false });
   } catch (e) {
-    console.warn('Failed to load PGN:', e);
-    return null;
+    try {
+      const sanitizedPgn = `${headerSection}\n\n${cleanedMoveText}`.trim();
+      chess.reset();
+      if (headers['FEN']) chess.load(headers['FEN']);
+      chess.loadPgn(sanitizedPgn, { strict: false });
+    } catch (e2) {
+      console.warn('Failed to load PGN:', e2);
+      // Still allow FEN-only display when a FEN is provided.
+      if (headers['FEN']) {
+        return {
+          headers,
+          moves: [],
+          initialFen,
+        };
+      }
+      return null;
+    }
   }
-  
+
   // Extract moves with comments and variations
   const moves = extractMoves(chess, initialFen);
-  
+
   return {
     headers,
     moves,
     initialFen,
   };
 }
+
 
 function extractMoves(chess: Chess, initialFen: string): MoveNode[] {
   const moves: MoveNode[] = [];
