@@ -12,6 +12,7 @@ export interface ViewerState {
   lastMoveSquares: { from: string; to: string } | null;
   moveNumber: number;
   isWhiteMove: boolean;
+  boardOrientation?: 'white' | 'black';
 }
 
 export interface StoredPgnData {
@@ -45,6 +46,7 @@ export function clearPgnFromStorage(): void {
 }
 
 export function saveViewerState(state: ViewerState): void {
+  console.log('[Storage] Saving viewer state:', state);
   localStorage.setItem(STORAGE_KEYS.VIEWER_STATE, JSON.stringify(state));
   // Dispatch a custom event for same-window listeners
   window.dispatchEvent(new CustomEvent('chess-state-change', { detail: state }));
@@ -87,6 +89,7 @@ export function subscribeToStateChanges(
   const pollInterval = setInterval(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.VIEWER_STATE);
     if (stored && stored !== lastStateJson) {
+      console.log('[Storage] Polling detected change:', stored);
       lastStateJson = stored;
       try {
         const state = JSON.parse(stored);

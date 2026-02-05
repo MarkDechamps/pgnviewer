@@ -17,11 +17,13 @@ export default function Presenter() {
   // Load initial state and subscribe to changes
   useEffect(() => {
     const initial = loadViewerState();
+    console.log('[Presenter] Initial state loaded:', initial);
     if (initial) {
       setState(initial);
     }
 
     const unsubscribe = subscribeToStateChanges((newState) => {
+      console.log('[Presenter] State change received:', newState);
       setState(newState);
     });
 
@@ -53,6 +55,7 @@ export default function Presenter() {
           fen={currentFen} 
           boardWidth={boardSize} 
           isPresenter={true}
+          orientation={state?.boardOrientation || 'white'}
           lastMoveSquares={state?.lastMoveSquares || null}
         />
       </div>

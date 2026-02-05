@@ -44,9 +44,10 @@ export default function Index() {
       lastMoveSquares: move ? { from: move.from, to: move.to } : null,
       moveNumber: move ? move.moveNumber : 0,
       isWhiteMove: move ? move.isWhite : true,
+      boardOrientation: boardOrientation,
     };
     saveViewerState(state);
-  }, [selectedGameIndex, currentMoveIndex, currentFen, currentMoves]);
+  }, [selectedGameIndex, currentMoveIndex, currentFen, currentMoves, boardOrientation]);
 
   useEffect(() => {
     syncState();
