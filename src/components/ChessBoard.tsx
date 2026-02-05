@@ -1,5 +1,6 @@
 import { Chessboard } from 'react-chessboard';
 import React from 'react';
+import type { CustomSquareStyles } from 'react-chessboard/dist/chessboard/types';
 
 interface ChessBoardProps {
   fen: string;
@@ -19,12 +20,12 @@ export function ChessBoard({
   lastMoveSquares 
 }: ChessBoardProps) {
   // Custom square styles for last move highlighting
-  const squareStyles: Record<string, React.CSSProperties> = {};
+  const customSquareStyles: CustomSquareStyles = {};
   
   if (lastMoveSquares) {
     const highlightStyle: React.CSSProperties = { backgroundColor: 'rgba(255, 255, 0, 0.4)' };
-    squareStyles[lastMoveSquares.from] = highlightStyle;
-    squareStyles[lastMoveSquares.to] = highlightStyle;
+    customSquareStyles[lastMoveSquares.from] = highlightStyle;
+    customSquareStyles[lastMoveSquares.to] = highlightStyle;
   }
 
   return (
@@ -33,14 +34,13 @@ export function ChessBoard({
       style={{ width: boardWidth, height: boardWidth }}
     >
       <Chessboard
-        options={{
-          position: fen,
-          boardOrientation: orientation,
-          allowDragging: false,
-          lightSquareStyle: { backgroundColor: 'hsl(39, 46%, 84%)' },
-          darkSquareStyle: { backgroundColor: 'hsl(30, 25%, 44%)' },
-          squareStyles: squareStyles,
-        }}
+        position={fen}
+        boardOrientation={orientation}
+        arePiecesDraggable={false}
+        customLightSquareStyle={{ backgroundColor: 'hsl(39, 46%, 84%)' }}
+        customDarkSquareStyle={{ backgroundColor: 'hsl(30, 25%, 44%)' }}
+        customSquareStyles={customSquareStyles}
+        boardWidth={boardWidth}
       />
     </div>
   );
