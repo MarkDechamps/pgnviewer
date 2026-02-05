@@ -6,6 +6,7 @@ import {
   loadViewerState,
   subscribeToStateChanges,
   ViewerState,
+  STORAGE_KEYS,
 } from '@/lib/chess-storage';
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -13,18 +14,27 @@ const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 export default function Presenter() {
   const [state, setState] = useState<ViewerState | null>(null);
   const [showMoveInfo, setShowMoveInfo] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('Initializing...');
 
   // Load initial state and subscribe to changes
   useEffect(() => {
+    // Direct localStorage check for debugging
+    const rawStorage = localStorage.getItem(STORAGE_KEYS.VIEWER_STATE);
+    setDebugInfo(`Raw storage: ${rawStorage ? rawStorage.substring(0, 50) + '...' : 'null'}`);
+    
     const initial = loadViewerState();
     console.log('[Presenter] Initial state loaded:', initial);
     if (initial) {
       setState(initial);
+      setDebugInfo(`Loaded: FEN=${initial.fen.substring(0, 20)}...`);
+    } else {
+      setDebugInfo('No initial state found in storage');
     }
 
     const unsubscribe = subscribeToStateChanges((newState) => {
       console.log('[Presenter] State change received:', newState);
       setState(newState);
+      setDebugInfo(`Updated: move ${newState.moveIndex}, FEN=${newState.fen.substring(0, 20)}...`);
     });
 
     return unsubscribe;
@@ -91,15 +101,21 @@ export default function Presenter() {
       {/* Sync indicator */}
       <div className="fixed top-4 left-4 text-xs text-muted-foreground">
         {state ? (
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-            Synced with main viewer
-          </span>
+          <div className="space-y-1">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              Synced with main viewer
+            </span>
+            <div className="text-[10px] opacity-70">{debugInfo}</div>
+          </div>
         ) : (
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-muted-foreground rounded-full" />
-            Waiting for connection...
-          </span>
+          <div className="space-y-1">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-muted-foreground rounded-full" />
+              Waiting for connection...
+            </span>
+            <div className="text-[10px] opacity-70">{debugInfo}</div>
+          </div>
         )}
       </div>
     </div>
