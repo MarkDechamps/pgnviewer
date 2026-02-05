@@ -65,10 +65,13 @@ export function loadViewerState(): ViewerState | null {
 export function subscribeToStateChanges(
   callback: (state: ViewerState) => void
 ): () => void {
+  let lastStateJson = '';
+
   const handleStorage = (event: StorageEvent) => {
     if (event.key === STORAGE_KEYS.VIEWER_STATE && event.newValue) {
       try {
         const state = JSON.parse(event.newValue);
+        lastStateJson = event.newValue;
         callback(state);
       } catch {
         // Ignore parse errors
@@ -80,10 +83,25 @@ export function subscribeToStateChanges(
     callback(event.detail);
   };
 
+  // Polling fallback for cross-tab sync (storage events can be unreliable)
+  const pollInterval = setInterval(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.VIEWER_STATE);
+    if (stored && stored !== lastStateJson) {
+      lastStateJson = stored;
+      try {
+        const state = JSON.parse(stored);
+        callback(state);
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }, 200);
+
   window.addEventListener('storage', handleStorage);
   window.addEventListener('chess-state-change', handleCustomEvent as EventListener);
 
   return () => {
+    clearInterval(pollInterval);
     window.removeEventListener('storage', handleStorage);
     window.removeEventListener('chess-state-change', handleCustomEvent as EventListener);
   };
